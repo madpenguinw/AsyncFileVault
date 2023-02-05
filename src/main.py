@@ -40,7 +40,7 @@ async def validate_ip(request: Request, call_next):
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
-    prefix='/api/v1/auth',
+    prefix='/api/v1/auth/jwt',
     tags=['User']
 )
 app.include_router(

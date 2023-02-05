@@ -4,10 +4,12 @@ from typing import Any, Generic, Type, TypeVar
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import update
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import select
 
 from db.db import Base
+from models.users import User
 
 ModelType = TypeVar('ModelType', bound=Base)
 CreateSchemaType = TypeVar('CreateSchemaType', bound=BaseModel)
@@ -39,22 +41,13 @@ class FileCRUD(
     def __init__(self, model: Type[ModelType]):
         self._model = model
 
-    async def get(
-            self, db: AsyncSession, id: int) -> ModelType | None:
-        """Get the file."""
-        statement = select(self._model).where(
-            self._model.id == id and self._model.is_downloadable)
-        results = await db.execute(statement=statement)
-
-        return results.scalar_one_or_none()
-
     async def get_multi(
-        self, user_id: int, db: AsyncSession, skip=0, limit=100
-    ) -> list[ModelType]:
-        """Get all downloadable(or as many as it nedeed) File objects."""
+        self, user: User, db: AsyncSession, skip=0, limit=100
+    ):
+        """Get all (or as many as it nedeed) downloadable File objects."""
 
         statement = select(self._model).where(
-            self._model.user == user_id).where(
+            self._model.user_id == user.id).where(
                 self._model.is_downloadable).offset(skip).limit(limit)
         results = await db.execute(statement=statement)
 
@@ -63,13 +56,21 @@ class FileCRUD(
     async def create(
         self,
         db: AsyncSession,
-        *,
-        obj_in: CreateSchemaType
+        filename: str,
+        path: str,
+        user_id: UUID,
+        size: float
     ) -> ModelType:
         """Create the File object in DB."""
 
-        obj_in_data = jsonable_encoder(obj_in)
-        db_obj = self._model(**obj_in_data)
+        db_obj: Type[ModelType] = self._model(
+            name=filename,
+            user_id=user_id,
+            created_at=datetime.now(),
+            path=path,
+            size=size,
+            is_downloadable=True
+        )
 
         db.add(db_obj)
         await db.commit()

@@ -4,7 +4,7 @@ from fastapi_users_db_sqlalchemy import (SQLAlchemyBaseUserTableUUID,
 from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyAccessTokenDatabase, SQLAlchemyBaseAccessTokenTableUUID)
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import relationship
 
 from db.db import Base, get_session
 

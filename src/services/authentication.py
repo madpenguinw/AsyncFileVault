@@ -8,11 +8,14 @@ from core.config import app_settings
 from models.users import User
 from services.users import get_user_manager
 
-bearer_transport = BearerTransport(tokenUrl='auth/login')
+bearer_transport = BearerTransport(tokenUrl='auth/jwt/login')
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=app_settings.verification, lifetime_seconds=3600)
+    return JWTStrategy(
+        secret=app_settings.verification,
+        lifetime_seconds=36000
+    )
 
 
 auth_backend = AuthenticationBackend(
