@@ -5,6 +5,7 @@ from uuid import UUID
 import aiofiles
 import coloredlogs
 from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_logic.errors import file_not_found_error, file_not_saved_error
@@ -12,7 +13,7 @@ from api_logic.logic import get_file_sizes, get_filename_path
 from db.db import get_session
 from models.users import User
 from schemas.files import File as FileSchema
-from services.authentication import current_user
+from services.authentication import auth_scheme, current_user
 from services.files import file_crud
 
 files_router = APIRouter(tags=['Manage files'])
@@ -27,6 +28,7 @@ coloredlogs.install(level='DEBUG')
     response_model=dict[str, list[FileSchema] | UUID]
 )
 async def get_files_info(
+    token: HTTPAuthorizationCredentials = Depends(auth_scheme),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(current_user),
     max_result: int = 10,
@@ -58,6 +60,7 @@ async def get_files_info(
 )
 async def upload_file(
     *,
+    token: HTTPAuthorizationCredentials = Depends(auth_scheme),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(current_user),
     path: str,
