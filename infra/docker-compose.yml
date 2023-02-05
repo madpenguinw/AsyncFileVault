@@ -1,0 +1,37 @@
+version: '3.11'
+
+volumes:
+  postgresql:
+  media_value:
+
+services:
+  db:
+    image: postgres:15.1-alpine
+    ports:
+      - ${DB_PORTS}
+    volumes:
+      - postgresql:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
+  backend:
+    image: penguinw/file_manager:latest
+    ports:
+      - ${FM_PORTS}
+    volumes:
+      - media_value:/app/media/
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+    restart: always
+
+  nginx:
+    image: nginx:1.23.3-alpine
+    ports:
+      - ${NG_PORTS}
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    restart: always
+    depends_on:
+      - backend

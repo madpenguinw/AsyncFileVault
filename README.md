@@ -281,3 +281,88 @@ POST /files/revisions
 2. Используйте готовые библиотеки и пакеты, например, для авторизации. Для поиска можно использовать [сервис openbase](https://openbase.com/categories/python), [PyPi](https://pypi.org/) или на [GitHub](https://github.com/search?).
 3. Используйте **in-memory-db** для кэширования данных.
 4. Для скачивания файлов можно использовать возможности сервера отдачи статики, для хранения — облачное объектное хранилище (s3).
+
+
+## Запуск проекта
+
+- Клонировать репозиторий и перейти в него в командной строке.
+
+```
+git clone https://github.com/madpenguinw/async-python-sprint-5
+```
+
+- Из корневой папки проекта:
+
+```
+python -m venv venv
+source venv/Scripts/activate
+python -m pip install --upgrade pip
+```
+
+- Установка зависимостей из корневой папки проекта:
+
+```
+pip install -r requirements.txt
+```
+
+- создать файл .env в папке src/ с переменными окружения. Шаблон (он же находится в файле example.env):
+
+```
+PROJECT_NAME=FileManager
+DATABASE_DSN=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres
+PROJECT_PORT=8080
+PROJECT_HOST=127.0.0.1
+BLACKLISTED_IPS=[]
+DB_PORTS=5432:5432
+FM_PORTS=8080:8080
+NG_PORTS=80:80
+RESET_PASSWORD=SECRET_1
+VERIFICATION=SECRET_2
+FILES_DIR=files
+```
+
+- При добавлении IP в список BLACKLISTED_IPS (для проверки работоспособности - 127.0.0.1), доступ с него к данному ресурсу будет заблокирован
+- Запустить на устройстве Docker
+- Выполнить в консоли команду для запуска PostgreSQL в Docker-контейнере:
+
+```
+docker run \
+  --rm   \
+  --name postgres-fastapi \
+  -p 5432:5432 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=collection \
+  -d postgres:15.1
+```
+- Для запуска сервера из папки src/ выполнить:
+```
+python main.py
+
+или
+
+uvicorn main:app --reload --port:8080
+```
+- Подготовить миграции:
+
+```
+alembic revision --autogenerate -m 01_initial-db
+```
+- Открыть файл с миграциями в папке migrations/versions (название заканчивается на 01_initial-db) и вставить строку 'import fastapi_users_db_sqlalchemy' в начало файла
+
+- Выполнить миграции
+```
+alembic upgrade head
+```
+
+- Swagger доступен по адресу http://127.0.0.1:8080/api/openapi
+
+## Об авторе
+
+```
+developed_by = {'author': 'Mikhail Sokolov',
+                'university': 'ITMO',
+                'courses': 'Yandex.Practicum',
+                'telegram': 't.me/lmikhailsokolovl',
+                'is_it_funny': 'Yes!'}
+```
