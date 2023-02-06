@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from uuid import UUID
 
@@ -9,8 +10,8 @@ from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api_logic.errors import (file_not_found_error,
-                              file_not_saved_error, permission_denied_error)
+from api_logic.errors import (bad_request_error, file_not_found_error,
+                              permission_denied_error)
 from api_logic.logic import get_file_sizes, get_filename_path
 from db.db import get_session
 from models.users import User
@@ -50,7 +51,7 @@ async def get_files_info(
             'were not found in database',
             {'user_id': user.id}
         )
-        file_not_found_error()
+        file_not_found_error('Files were not found.')
 
     return {'account_id': user.id, 'files': files}
 
@@ -101,7 +102,7 @@ async def upload_file(
 
     except Exception as error:
         logger.error(error)
-        file_not_saved_error()
+        bad_request_error('File was not saved.')
 
     real_full_path = f'{real_path}\\{real_filename}'
 
@@ -158,14 +159,14 @@ async def download_file(
         )
     except Exception as error:
         logger.error(error)
-        file_not_found_error()
+        file_not_found_error('Exception during handling the request.')
 
     if not file:
         logger.error('File "%(path)s" was not found', {'path': path})
-        file_not_found_error()
+        file_not_found_error('File was not found.')
 
     if file.user_id != user.id:
-        permission_denied_error()
+        permission_denied_error('Permission denied.')
 
     logger.debug(
         'File "%(path)s" was successfully downloaded '
@@ -176,3 +177,56 @@ async def download_file(
     return file.path
 
 
+@files_router.get(
+    '/delete',
+    status_code=status.HTTP_404_NOT_FOUND
+)
+async def delete_file(
+    *,
+    token: HTTPAuthorizationCredentials = Depends(auth_scheme),
+    db: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+    path: str,  # it also may be an id
+) -> FileResponse:
+    """
+    Delete file from DB.
+    Path here is an absolute path to file (Use one slash in it).
+    Path should include file's name.
+    Due to technical task path variable may also be a file's id.
+    Only user who upload the file can delete it.
+    """
+
+    id = 0
+
+    try:
+        id = int(path)
+    except ValueError:
+        pass
+
+    try:
+        file = await file_crud.update(
+            db=db,
+            id=id,
+            path=path,
+            user_id=user.id
+        )
+    except Exception as error:
+        logger.error(error)
+        file_not_found_error('Exception during handling the request.')
+
+    if not file:
+        logger.error('File "%(path)s" was not found', {'path': path})
+        file_not_found_error('File was not found.')
+
+    try:
+        os.unlink(file.path)
+    except Exception as error:
+        logger.error(error)
+        file_not_found_error('Exception during handling the request.')
+
+    logger.debug(
+        'File "%(path)s" was successfully deleted from server',
+        {'path': path}
+    )
+
+    return file

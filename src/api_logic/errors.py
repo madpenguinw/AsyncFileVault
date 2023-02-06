@@ -1,36 +1,22 @@
 from fastapi import HTTPException, status
 
 
-def file_not_found_error():
+def file_not_found_error(detail: str):
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail='File was not found.'
+        detail=detail
     )
 
 
-def permission_denied_error():
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail='Permission denied.'
-    )
-
-
-def file_not_saved_error():
+def bad_request_error(detail: str):
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail='File was not saved.'
+        detail=detail
     )
 
 
-def file_gone_error():
+def permission_denied_error(detail: str):
     raise HTTPException(
-        status_code=status.HTTP_410_GONE,
-        detail='File was deleted from the database.'
-    )
-
-
-def internal_server_error():
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail='Internal Server Error'
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=detail
     )

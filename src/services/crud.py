@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Any, Generic, Type, TypeVar
+from typing import Generic, Type, TypeVar
 
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import UUID
@@ -48,14 +47,19 @@ class FileCRUD(
 
         if id:
 
-            statement = select(self._model).where(
-                self._model.id == id).where(
-                    self._model.is_downloadable)
+            statement = (
+                select(self._model).
+                where(self._model.id == id).
+                where(self._model.is_downloadable)
+            )
+
         else:
 
-            statement = select(self._model).where(
-                self._model.path == path).where(
-                    self._model.is_downloadable)
+            statement = (
+                select(self._model).
+                where(self._model.path == path).
+                where(self._model.is_downloadable)
+            )
 
         results = await db.execute(statement=statement)
 
@@ -66,9 +70,14 @@ class FileCRUD(
     ):
         """Get all (or as many as it nedeed) downloadable File objects."""
 
-        statement = select(self._model).where(
-            self._model.user_id == user.id).where(
-                self._model.is_downloadable).offset(skip).limit(limit)
+        statement = (
+            select(self._model).
+            where(self._model.user_id == user.id).
+            where(self._model.is_downloadable).
+            offset(skip).
+            limit(limit)
+        )
+
         results = await db.execute(statement=statement)
 
         return results.scalars().all()
@@ -101,19 +110,33 @@ class FileCRUD(
     async def update(
         self,
         db: AsyncSession,
-        db_obj: ModelType,
-        obj_in: UpdateSchemaType | dict[str, Any]
+        id: int,
+        path: str,
+        user_id: UUID,
     ) -> ModelType:
         """Update the File object."""
 
-        obj_in_data = jsonable_encoder(obj_in)
-        safe_dict: dict[str, Any] = {}
-        for item in obj_in_data.items():
-            if item[1] is not None:  # value can be False, but not None
-                safe_dict[item[0]] = item[1]
-        statement = update(self._model).where(
-            self._model.id == db_obj.id).values(
-                safe_dict).returning(self._model)
+        if id:
+
+            statement = (
+                update(self._model).
+                where(self._model.id == id).
+                where(self._model.user_id == user_id).
+                where(self._model.is_downloadable == True).  # noqa
+                values({'is_downloadable': False}).
+                returning(self._model)
+            )
+
+        else:
+
+            statement = (
+                update(self._model).
+                where(self._model.path == path).
+                where(self._model.user_id == user_id).
+                where(self._model.is_downloadable == True).  # noqa
+                values({'is_downloadable': False}).
+                returning(self._model)
+            )
 
         results = await db.execute(statement=statement)
         file_obj = results.one_or_none()
