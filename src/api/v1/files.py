@@ -106,7 +106,7 @@ async def upload_file(
 
     real_full_path = f'{real_path}\\{real_filename}'
 
-    size = get_file_sizes([real_full_path])
+    size = get_file_sizes(real_full_path)
 
     file = await file_crud.create(
         db=db,

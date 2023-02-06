@@ -1,13 +1,18 @@
 import os
 
 from core.config import app_settings
+from models.files import File
 
 
-def get_file_sizes(paths: list[str]) -> int | float:
+def get_file_sizes(path: str = '', files: list[File] = []) -> int | float:
     """Returns sum of file sizes in bytes"""
+
     size: int | float = 0
 
-    for path in paths:
+    if files:
+        for file in files:
+            size += os.path.getsize(file.path)
+    elif path:
         size += os.path.getsize(path)
 
     return size

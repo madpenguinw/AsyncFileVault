@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse, ORJSONResponse
 
-from api.v1 import files, ping
+from api.v1 import files, ping, users
 from core.config import app_settings
 from schemas.users import UserCreate, UserRead, UserUpdate
 from services.authentication import auth_backend, fastapi_users
@@ -66,6 +66,7 @@ app.include_router(
 
 app.include_router(ping.ping_router, prefix='/api/v1/ping')
 app.include_router(files.files_router, prefix='/api/v1/files')
+app.include_router(users.user_router, prefix='/api/v1/user')
 
 if __name__ == '__main__':
     uvicorn.run(
