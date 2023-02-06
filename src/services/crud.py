@@ -41,6 +41,26 @@ class FileCRUD(
     def __init__(self, model: Type[ModelType]):
         self._model = model
 
+    async def get(
+        self, db: AsyncSession, id: int, path: str
+    ):
+        """Get the file using its id or path"""
+
+        if id:
+
+            statement = select(self._model).where(
+                self._model.id == id).where(
+                    self._model.is_downloadable)
+        else:
+
+            statement = select(self._model).where(
+                self._model.path == path).where(
+                    self._model.is_downloadable)
+
+        results = await db.execute(statement=statement)
+
+        return results.scalar_one_or_none()
+
     async def get_multi(
         self, user: User, db: AsyncSession, skip=0, limit=100
     ):

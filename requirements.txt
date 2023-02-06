@@ -17,3 +17,4 @@ coloredlogs
 async-timeout
 fastapi-users[sqlalchemy]
 aiofiles
+requests

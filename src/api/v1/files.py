@@ -5,10 +5,12 @@ from uuid import UUID
 import aiofiles
 import coloredlogs
 from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api_logic.errors import file_not_found_error, file_not_saved_error
+from api_logic.errors import (file_not_found_error,
+                              file_not_saved_error, permission_denied_error)
 from api_logic.logic import get_file_sizes, get_filename_path
 from db.db import get_session
 from models.users import User
@@ -63,11 +65,13 @@ async def upload_file(
     token: HTTPAuthorizationCredentials = Depends(auth_scheme),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(current_user),
-    path: str,
+    path: str = '',
     file: UploadFile = File(),
 ) -> FileSchema:
     """
     Upload file to DB.
+    Path here is a relative path,
+    where the root directory is a folder with the user name.
     """
 
     filename: str = file.filename
@@ -78,7 +82,6 @@ async def upload_file(
     real_filename: str = res_filename_path_list[0]
     real_path: str = res_filename_path_list[1]
 
-    # if not Path.exists(real_path):
     Path(real_path).mkdir(parents=True, exist_ok=True)
     logger.info('Path "%(path)s" was created', {'path': real_path})
 
@@ -108,7 +111,7 @@ async def upload_file(
         db=db,
         filename=real_filename,
         user_id=username,
-        path=real_path,
+        path=real_full_path,
         size=size
     )
 
@@ -118,3 +121,58 @@ async def upload_file(
     )
 
     return file
+
+
+@files_router.get(
+    '/download',
+    response_class=FileResponse,
+    status_code=status.HTTP_200_OK
+)
+async def download_file(
+    *,
+    token: HTTPAuthorizationCredentials = Depends(auth_scheme),
+    db: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+    path: str,  # it also may be an id
+) -> FileResponse:
+    """
+    Download file from DB.
+    Path here is an absolute path to file (Use one slash in it).
+    Path should include file's name.
+    Due to technical task path variable may also be a file's id.
+    Only user who upload the file can download it.
+    """
+
+    id = 0
+
+    try:
+        id = int(path)
+    except ValueError:
+        pass
+
+    try:
+        file = await file_crud.get(
+            db=db,
+            id=id,
+            path=path,
+        )
+    except Exception as error:
+        logger.error(error)
+        file_not_found_error()
+
+    if not file:
+        logger.error('File "%(path)s" was not found', {'path': path})
+        file_not_found_error()
+
+    if file.user_id != user.id:
+        permission_denied_error()
+
+    logger.debug(
+        'File "%(path)s" was successfully downloaded '
+        'from server and saved in DB',
+        {'path': path}
+    )
+
+    return file.path
+
+
