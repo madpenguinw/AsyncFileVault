@@ -5,7 +5,7 @@ from uuid import UUID
 
 import aiofiles
 import coloredlogs
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,8 +34,8 @@ async def get_files_info(
     token: HTTPAuthorizationCredentials = Depends(auth_scheme),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(current_user),
-    max_result: int = 10,
-    offset: int = 0
+    max_result: int = Query(10, description='Files amount on page', ge=1),
+    offset: int = Query(0, description='Skip first "n" Files in query', ge=0),
 ) -> dict[str, list[FileSchema] | UUID]:
     """
     Get File objects.
@@ -70,7 +70,7 @@ async def upload_file(
     file: UploadFile = File(),
 ) -> FileSchema:
     """
-    Upload file to DB.
+    Upload file to DB. \n
     Path here is a relative path,
     where the root directory is a folder with the user name.
     """
@@ -104,9 +104,13 @@ async def upload_file(
         logger.error(error)
         bad_request_error('File was not saved.')
 
-    real_full_path = f'{real_path}\\{real_filename}'
+    real_full_path = f'{real_path}/{real_filename}'
 
-    size = get_file_sizes(real_full_path)
+    try:
+        size: int | float = get_file_sizes(real_full_path)
+    except FileNotFoundError as error:
+        logger.error(error)
+        file_not_found_error('File was not found.')
 
     file = await file_crud.create(
         db=db,
@@ -137,10 +141,10 @@ async def download_file(
     path: str,  # it also may be an id
 ) -> FileResponse:
     """
-    Download file from DB.
-    Path here is an absolute path to file (Use one slash in it).
-    Path should include file's name.
-    Due to technical task path variable may also be a file's id.
+    Download file from DB. \n
+    Path here is an absolute path to file (Use one slash in it). \n
+    Path should include file's name. \n
+    Due to technical task path variable may also be a file's id. \n
     Only user who upload the file can download it.
     """
 
@@ -189,11 +193,11 @@ async def delete_file(
     path: str,  # it also may be an id
 ) -> FileResponse:
     """
-    Delete file from DB.
-    Path here is an absolute path to file (Use one slash in it).
-    Path should include file's name.
-    Due to technical task path variable may also be a file's id.
-    Only user who upload the file can delete it.
+    Delete file from DB. \n
+    Path here is an absolute path to file (Use one slash in it). \n
+    Path should include file's name. \n
+    Due to technical task path variable may also be a file's id. \n
+    Only user who upload the file can delete it. \n
     """
 
     id = 0

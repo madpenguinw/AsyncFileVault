@@ -12,7 +12,7 @@ from services.authentication import auth_backend, fastapi_users
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title=app_settings.title,
+    title=app_settings.project_name,
     docs_url='/api/openapi',
     openapi_url='/api/openapi.json',
     default_response_class=ORJSONResponse,
@@ -71,7 +71,7 @@ app.include_router(users.user_router, prefix='/api/v1/user')
 if __name__ == '__main__':
     uvicorn.run(
         'main:app',
-        host=app_settings.host,
-        port=app_settings.port,
+        host=app_settings.project_host,
+        port=app_settings.project_port,
         reload=True
     )

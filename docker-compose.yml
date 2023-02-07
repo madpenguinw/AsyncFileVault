@@ -15,11 +15,10 @@ services:
       POSTGRES_DB: 'collection'
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
-    networks:
-      - file_manager
 
   backend:
-    image: backend:latest
+    build:
+      context: src
     ports:
       - 8080:8080
     volumes:
@@ -27,13 +26,7 @@ services:
     depends_on:
       - db
     env_file:
-      - ./.env
+      - src/.env
     environment:
       - POSTGRES_PORT=5432
-    networks:
-      - file_manager
     restart: always
-
-networks:
-  file_manager:
-    external: true

@@ -26,7 +26,7 @@ def get_filename_path(username: str, filename: str, path: str) -> list[str]:
         filename = tail
         path = path.split('/' + filename, maxsplit=1)[0]
 
-    path = f'{app_settings.file_path}/{username}/{path}/'
+    path = f'{app_settings.files_dir}/{username}/{path}/'
     path = os.path.normpath(path)
 
     return [filename, path]

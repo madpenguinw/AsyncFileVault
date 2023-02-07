@@ -45,7 +45,11 @@ async def get_status(
         )
         file_not_found_error('Files were not found.')
 
-    size: int | float = get_file_sizes(files=files)
+    try:
+        size: int | float = get_file_sizes(files=files)
+    except FileNotFoundError:
+        file_not_found_error('Files were not found.')
+
     length: int = len(files)
 
     return {'account_id': user.id, 'files': length, 'used': size}
